@@ -1,0 +1,118 @@
+// Protobuf V3 description file
+// Compile using: protoc --python_out=./ ./sat_descrip.proto
+
+syntax = "proto3";
+
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/duration.proto";
+
+package LEOHack;
+
+// =============== INFO MESSAGES ===============
+// Location + orientation
+// Used for:
+// - Absolute pose of team satellite to base station
+// - Absolute pose of dead satellite to base station
+// - Relative pose of team satellite to dead satellite
+message Pose2D {
+    float x = 1; // in meters
+    float y = 2; // in meters
+    float theta = 3; // in rads
+}
+
+// 2D Twist, translatonal + rotational velocity
+message Twist2D {
+    float v_x = 1; // in m/s
+    float v_y = 2; // in m/s
+    float omega = 3; // in rad/s
+}
+
+// 2D Wrench, force + torque
+message Wrench2D {
+    float f_x = 1; // in N
+    float f_y = 2; // in N
+    float tau = 3; // in Nm
+}
+
+// Team info
+// Team name can be whatever a team decides
+// Team ID must be the unique ID provided by the competition
+message TeamInfo {
+    string teamName = 1;
+    uint32 teamID = 2;
+}
+
+message ServoStates{
+    float servo1 = 1;
+    float servo2 = 2;
+    float servo3 = 3;
+}
+
+// Satellite description
+// Sent during first connect and handshakes with satellite and team code
+// Defines name, team ID, thruster config, mass and inertia
+// !! MAKE SURE YOUR TEAM ID IS SET IN CODE, OTHERWISE SCORES WILL NOT BE COUNTED CORRECTLY !!
+message SatelliteDescription {
+    // ID properties
+    // !! TO BE SET BY TEAM !!
+    TeamInfo teamInfo = 1;
+
+    // Physical properties
+    // will come pre-filled
+    float mass = 2;
+    float inertia = 3;
+
+    // Connection properties
+    // will be pre-filled 
+    string ipAddress = 5;
+}
+
+// =============== STATE MESSAGES ===============
+// satellite state
+// Reply from the satellite that contain
+message SatelliteState {
+
+    // satellite location
+    Pose2D pose = 3;
+
+    // satellite velocity
+    Twist2D twist = 4;
+
+    // Used fuel (tracks impulse over time)
+    float fuel = 5;
+}
+
+message SystemState {
+    enum State {
+        INIT = 0;
+        RUN = 1;
+        RESET = 2;
+        ABORT = 3;
+    }
+
+    State state = 1;
+
+    // https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/timestamp
+    // https://developers.google.com/protocol-buffers/docs/reference/python-generated#timestamp
+    google.protobuf.Duration elapsedTime = 2;
+    google.protobuf.Timestamp absoluteTime = 3;
+}
+
+// =============== SATELLITE COMMANDS ===============
+
+message ControlMessage {
+    // Wether or not to apply sent thrust commands
+    bool active = 1;
+
+    // Thrust command
+    Wrench2D thrust = 2;
+
+    // Absolute pose read by the camera system
+    Pose2D absolute_pose = 3;
+
+    ServoStates servo_states = 4;
+
+    // Control loop period
+    // for providing accurate impulse control
+    float time_step = 5;
+}
